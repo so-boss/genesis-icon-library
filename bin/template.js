@@ -1,9 +1,9 @@
-const getAttrs = (style) => {
+const getAttrs = (style, size) => {
   const baseAttrs = {
     xmlns: 'http://www.w3.org/2000/svg',
     width: 'size',
     height: 'size',
-    viewBox: '0 0 24 24',
+    viewBox: '0 0 96 96'
   }
   const fillAttrs = {
     fill: 'color',
@@ -43,7 +43,7 @@ const getElementCode = (ComponentName, attrs, svgCode) => `
 
   ${ComponentName}.defaultProps = {
     color: 'currentColor',
-    size: '24',
+    size: '48',
   }
 
   export default ${ComponentName}

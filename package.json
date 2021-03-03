@@ -29,7 +29,7 @@
     "build": "rollup -c ./build/rollup.config.prod.js"
   },
   "config": {
-    "style": "stroke"
+    "style": "fill"
   },
   "license": "MIT",
   "dependencies": {

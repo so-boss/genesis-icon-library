@@ -59,7 +59,7 @@ const attrsToString = (attrs, style) => {
 };
 
 // generate icon code separately
-const generateIconCode = async ({name}) => {
+const generateIconCode = async ({name, size}) => {
   const names = parseName(name, defaultStyle)
   console.log(names)
   const location = path.join(rootDir, 'src/svg', `${names.name}.svg`)
@@ -67,7 +67,7 @@ const generateIconCode = async ({name}) => {
   const code = fs.readFileSync(location)
   const svgCode = await processSvg(code)
   const ComponentName = names.componentName
-  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style), names.style), svgCode)
+  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style, size), names.style), svgCode)
   const component = format({
     text: element,
     eslintConfig: {
@@ -108,8 +108,8 @@ generateIconsIndex()
 Object
   .keys(icons)
   .map(key => icons[key])
-  .forEach(({name}) => {
-    generateIconCode({name})
+  .forEach(({name, size}) => {
+    generateIconCode({name, size})
       .then(({ComponentName, name}) => {
         appendToIconsIndex({ComponentName, name})
       })
