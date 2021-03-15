@@ -42,8 +42,6 @@ const generateIconsIndex = () => {
     initialTypeDefinitions,
     'utf-8',
   );
-
-  fs.writeFileSync(path.join(rootDir, 'src', 'groups.js'), '', 'utf-8');
 }
 
 // generate attributes code
