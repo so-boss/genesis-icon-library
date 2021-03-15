@@ -77,8 +77,6 @@ client.file(fileId)
           things.groups[group_name].children[name] = {
             name, id
           }
-
-          //component_name = group_name + "-" + name;
         }
 
         things.components[id] = {
@@ -145,7 +143,7 @@ client.file(fileId)
       .then(response => {
         return ensureDir(join(options.outputDir, options.format))
           .then(() => {
-            console.log(component)
+            //console.log(component)
             let name_to_write = component.name;
             if(name_to_write) {
               name_to_write = component.group + "-" + name_to_write;

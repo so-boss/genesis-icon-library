@@ -9,7 +9,6 @@ const defaultStyle = process.env.npm_package_config_style || 'stroke'
 const { getAttrs, getElementCode } = require('./template')
 const {components, groups} = require('../src/data.json')
 const icons = components
-//const groups = things.groups
 
 const rootDir = path.join(__dirname, '..')
 
@@ -43,11 +42,13 @@ const generateIconsIndex = () => {
     initialTypeDefinitions,
     'utf-8',
   );
+
+  fs.writeFileSync(path.join(rootDir, 'src', 'groups.js'), '', 'utf-8');
 }
 
 // generate attributes code
 const attrsToString = (attrs, style) => {
-  console.log('style: ', style)
+  // console.log('style: ', style)
   return Object.keys(attrs).map((key) => {
     // should distinguish fill or stroke
     if (key === 'width' || key === 'height' || key === style) {
@@ -63,7 +64,6 @@ const attrsToString = (attrs, style) => {
 // generate icon code separately
 const generateIconCode = async ({modified_name, size}) => {
   const names = parseName(modified_name, defaultStyle)
-  console.log(names)
   const location = path.join(rootDir, 'src/svg', `${names.name}.svg`)
   const destination = path.join(rootDir, 'src/icons', `${names.name}.js`)
   const code = fs.readFileSync(location)
@@ -90,7 +90,7 @@ const generateIconCode = async ({modified_name, size}) => {
 
 // append export code to icons.js
 const appendToIconsIndex = ({ComponentName, modified_name}) => {
-  console.log(ComponentName, modified_name)
+  //console.log(ComponentName, modified_name)
   const exportString = `export { default as ${ComponentName} } from './icons/${modified_name}';\r\n`;
   fs.appendFileSync(
     path.join(rootDir, 'src', 'icons.js'),
@@ -106,16 +106,27 @@ const appendToIconsIndex = ({ComponentName, modified_name}) => {
   );
 }
 
+// const createIconGroupsFile = () => {
+//   const exportString = `export { default as Groups } from '${groups}';\r\n`;
+//   fs.appendFileSync(
+//     path.join(rootDir, 'src', 'groups.js'),
+//     exportString,
+//     'utf-8',
+//   );
+// }
+
 generateIconsIndex()
 
 Object
   .keys(icons)
   .map(key => icons[key])
   .forEach(({component_name, group, height, width, description}) => {
-    console.log(component_name, group, height, width, description)
+    //console.log(component_name, group, height, width, description)
     const modified_name = group+"-"+component_name;
     generateIconCode({modified_name, height, width, description})
       .then(({ComponentName, modified_name}) => {
         appendToIconsIndex({ComponentName, modified_name})
       })
   })
+
+//createIconGroupsFile()
