@@ -13,6 +13,8 @@ const icons = things.components
 const groups = things.groups
 const rootDir = path.join(__dirname, '..')
 
+console.log("THINGS", things)
+
 // where icons code in
 const srcDir = path.join(rootDir, 'src')
 const iconsDir = path.join(rootDir, 'src/icons')
