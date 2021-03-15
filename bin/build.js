@@ -7,9 +7,10 @@ const processSvg = require('./processSvg')
 const { parseName } = require('./utils')
 const defaultStyle = process.env.npm_package_config_style || 'stroke'
 const { getAttrs, getElementCode } = require('./template')
-const {components, groups} = require('../src/data.json')
-const icons = components
-
+const things = require('../src/data.json');
+//const {components, groups} = require('../src/data.json')
+const icons = things.components
+const groups = things.groups
 const rootDir = path.join(__dirname, '..')
 
 // where icons code in
@@ -114,6 +115,8 @@ const appendToIconsIndex = ({ComponentName, modified_name}) => {
 // }
 
 generateIconsIndex()
+
+console.log(icons)
 
 Object
   .keys(icons)
