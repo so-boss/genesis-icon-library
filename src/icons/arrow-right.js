@@ -13,9 +13,10 @@ const ArrowRight = props => {
       {...otherProps}
     >
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
+        fill-rule="evenodd"
+        clip-rule="evenodd"
         d="M50.828 17.172a4 4 0 10-5.656 5.656L66.343 44H20a4 4 0 000 8h46.343L45.172 73.172a4 4 0 105.656 5.656l28-28a4 4 0 000-5.656l-28-28z"
+        fill="#000"
       ></path>
     </svg>
   );

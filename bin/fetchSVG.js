@@ -42,18 +42,51 @@ client.file(fileId)
 
   .then(({ data }) => {
     console.log('Processing response')
-    const components = {}
+    const things = {
+      groups: {},
+      components: {}
+    }
+    // const groups = {}
+    // const components = {}
+    let group_name = null;
 
     function check(c) {
+      //console.log(arguments)
+      // && c.visible!==false
+      if (c.type === 'FRAME') {
+        const {name, id} = c;
+        things.groups[name] = {
+          name,
+          id,
+          children: {}
+        }
+
+        group_name = name;
+
+        // c.children.forEach(check(c, name))
+      }
+
       if (c.type === 'COMPONENT') {
         const {name, id} = c
         const {description, key} = data.components[c.id]
         const {width, height} = c.absoluteBoundingBox
 
-        components[id] = {
-          name,
+        let component_name = name;
+
+        if(group_name) {
+          things.groups[group_name].children[name] = {
+            name, id
+          }
+
+          //component_name = group_name + "-" + name;
+        }
+
+        things.components[id] = {
+          component_name,
+          name: component_name,
           id,
           key,
+          group: group_name,
           file: fileId,
           description,
           width,
@@ -65,41 +98,44 @@ client.file(fileId)
       }
     }
 
+    // console.log(data.document.children)
     data.document.children.forEach(check)
-    if (Object.values(components).length === 0) {
+    if (Object.values(things.components).length === 0) {
       throw Error('No components found!')
     }
-    console.log(`${Object.values(components).length} components found in the figma file`)
-    return components
+
+    //console.log(things.groups)
+    console.log(`${Object.values(things.components).length} components found in the figma file`)
+    return things;
   })
-  .then(components => {
+  .then(things => {
     console.log('Getting export urls')
     return client.fileImages(
       fileId,
       {
         format: options.format,
-        ids: Object.keys(components),
+        ids: Object.keys(things.components),
         scale: options.scale
       }
     ).then(({data}) => {
       for(const id of Object.keys(data.images)) {
-        components[id].image = data.images[id]
+        things.components[id].image = data.images[id]
       }
-      return components
+      return things
     })
   })
-  .then(components => {
+  .then(things => {
     return ensureDir(join(options.outputDir))
-      .then(() => writeFile(resolve(options.outputDir, 'data.json'), JSON.stringify(components), 'utf8'))
-      .then(() => components)
+      .then(() => writeFile(resolve(options.outputDir, 'data.json'), JSON.stringify(things), 'utf8'))
+      .then(() => things)
   })
-  .then(components => {
+  .then(things => {
     const contentTypes = {
       'svg': 'image/svg+xml',
       'png': 'image/png',
       'jpg': 'image/jpeg'
     }
-    return queueTasks(Object.values(components).map(component => () => {
+    return queueTasks(Object.values(things.components).map(component => () => {
       return got.get(component.image, {
         headers: {
           'Content-Type': contentTypes[options.format]
@@ -108,7 +144,14 @@ client.file(fileId)
       })
       .then(response => {
         return ensureDir(join(options.outputDir, options.format))
-          .then(() => writeFile(join(options.outputDir, options.format, `${component.name}.${options.format}`), response.body, (options.format === 'svg' ? 'utf8' : 'binary')))
+          .then(() => {
+            console.log(component)
+            let name_to_write = component.name;
+            if(name_to_write) {
+              name_to_write = component.group + "-" + name_to_write;
+              writeFile(join(options.outputDir, options.format, `${name_to_write}.${options.format}`), response.body, (options.format === 'svg' ? 'utf8' : 'binary'))
+            }
+          })
       })
     }))
   })

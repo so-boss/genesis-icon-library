@@ -7,7 +7,9 @@ const processSvg = require('./processSvg')
 const { parseName } = require('./utils')
 const defaultStyle = process.env.npm_package_config_style || 'stroke'
 const { getAttrs, getElementCode } = require('./template')
-const icons = require('../src/data.json')
+const {components, groups} = require('../src/data.json')
+const icons = components
+//const groups = things.groups
 
 const rootDir = path.join(__dirname, '..')
 
@@ -59,8 +61,8 @@ const attrsToString = (attrs, style) => {
 };
 
 // generate icon code separately
-const generateIconCode = async ({name, size}) => {
-  const names = parseName(name, defaultStyle)
+const generateIconCode = async ({modified_name, size}) => {
+  const names = parseName(modified_name, defaultStyle)
   console.log(names)
   const location = path.join(rootDir, 'src/svg', `${names.name}.svg`)
   const destination = path.join(rootDir, 'src/icons', `${names.name}.js`)
@@ -83,12 +85,13 @@ const generateIconCode = async ({name, size}) => {
   fs.writeFileSync(destination, component, 'utf-8');
 
   console.log('Successfully built', ComponentName);
-  return {ComponentName, name: names.name}
+  return {ComponentName, name: names.name, modified_name: modified_name}
 }
 
 // append export code to icons.js
-const appendToIconsIndex = ({ComponentName, name}) => {
-  const exportString = `export { default as ${ComponentName} } from './icons/${name}';\r\n`;
+const appendToIconsIndex = ({ComponentName, modified_name}) => {
+  console.log(ComponentName, modified_name)
+  const exportString = `export { default as ${ComponentName} } from './icons/${modified_name}';\r\n`;
   fs.appendFileSync(
     path.join(rootDir, 'src', 'icons.js'),
     exportString,
@@ -108,9 +111,11 @@ generateIconsIndex()
 Object
   .keys(icons)
   .map(key => icons[key])
-  .forEach(({name, size}) => {
-    generateIconCode({name, size})
-      .then(({ComponentName, name}) => {
-        appendToIconsIndex({ComponentName, name})
+  .forEach(({component_name, group, height, width, description}) => {
+    console.log(component_name, group, height, width, description)
+    const modified_name = group+"-"+component_name;
+    generateIconCode({modified_name, height, width, description})
+      .then(({ComponentName, modified_name}) => {
+        appendToIconsIndex({ComponentName, modified_name})
       })
   })

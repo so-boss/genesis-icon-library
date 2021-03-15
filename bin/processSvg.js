@@ -51,7 +51,12 @@ async function processSvg(svg) {
     // because prettier thinks it's formatting JSX not HTML
     .then(svg => svg.replace(/;/g, ''))
     .then(removeSVGElement)
-    .then(svg => svg.replace(/([a-z]+)-([a-z]+)=/g, (_, a, b) => `${a}${CamelCase(b)}=`))
+    .then(svg => {
+      if(svg) {
+        svg.replace(/([a-z]+)-([a-z]+)=/g, (_, a, b) => `${a}${CamelCase(b)}=`)
+      }
+      return svg
+    })
   return optimized;
 }
 
