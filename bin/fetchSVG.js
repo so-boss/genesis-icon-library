@@ -9,7 +9,9 @@ const {FIGMA_TOKEN, FIGMA_FILE_URL} = process.env
 const options = {
   format: 'svg',
   outputDir: './src/',
-  scale: '1'
+  scale: '1',
+  include_id: true,
+  simplify_stroke: true,
 }
 
 for(const arg of process.argv.slice(2)) {
@@ -79,6 +81,7 @@ client.file(fileId)
           }
         }
 
+        console.log(c)
         things.components[id] = {
           component_name,
           name: component_name,
@@ -113,7 +116,9 @@ client.file(fileId)
       {
         format: options.format,
         ids: Object.keys(things.components),
-        scale: options.scale
+        scale: options.scale,
+        svg_include_id: options.include_id,
+        svg_simplify_stroke: options.simplify_stroke,
       }
     ).then(({data}) => {
       for(const id of Object.keys(data.images)) {

@@ -21,7 +21,13 @@ function optimize(svg) {
       { convertShapeToPath: false },
       { mergePaths: false },
       //{ removeAttrs: { attrs: '(fill|stroke.*)' } },
-      //{ removeTitle: true },
+      { removeTitle: false },
+      { cleanupIDs: false },
+      { removeHiddenElems: false },
+      { collapseGroups: false },
+      { removeEmptyContainers: false },
+      { removeViewBox: false },
+      //{ removeUselessStrokeAndFill: true },
     ],
   });
 
