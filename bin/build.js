@@ -115,7 +115,6 @@ const appendToIconsIndex = ({ComponentName, modified_name}) => {
 
 generateIconsIndex()
 
-console.log(icons)
 Object
   .keys(icons)
   .map(key => icons[key])
