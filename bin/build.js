@@ -7,13 +7,9 @@ const processSvg = require('./processSvg')
 const { parseName } = require('./utils')
 const defaultStyle = process.env.npm_package_config_style || 'stroke'
 const { getAttrs, getElementCode } = require('./template')
-const things = require('../src/data.json');
-//const {components, groups} = require('../src/data.json')
-const icons = things.components
-const groups = things.groups
+const {components, groups} = require('../src/data.json')
+const icons = components
 const rootDir = path.join(__dirname, '..')
-
-console.log("THINGS", things)
 
 // where icons code in
 const srcDir = path.join(rootDir, 'src')
@@ -63,14 +59,14 @@ const attrsToString = (attrs, style) => {
 };
 
 // generate icon code separately
-const generateIconCode = async ({modified_name, size}) => {
+const generateIconCode = async ({modified_name, height, width, description}) => {
   const names = parseName(modified_name, defaultStyle)
   const location = path.join(rootDir, 'src/svg', `${names.name}.svg`)
   const destination = path.join(rootDir, 'src/icons', `${names.name}.js`)
   const code = fs.readFileSync(location)
   const svgCode = await processSvg(code)
   const ComponentName = names.componentName
-  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style, size), names.style), svgCode)
+  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style, height, width), names.style), svgCode)
   const component = format({
     text: element,
     eslintConfig: {
@@ -107,15 +103,6 @@ const appendToIconsIndex = ({ComponentName, modified_name}) => {
   );
 }
 
-// const createIconGroupsFile = () => {
-//   const exportString = `export { default as Groups } from '${groups}';\r\n`;
-//   fs.appendFileSync(
-//     path.join(rootDir, 'src', 'groups.js'),
-//     exportString,
-//     'utf-8',
-//   );
-// }
-
 generateIconsIndex()
 
 console.log(icons)
@@ -131,5 +118,3 @@ Object
         appendToIconsIndex({ComponentName, modified_name})
       })
   })
-
-//createIconGroupsFile()

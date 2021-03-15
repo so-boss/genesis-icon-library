@@ -1,9 +1,9 @@
-const getAttrs = (style, size) => {
+const getAttrs = (style, height, width) => {
   const baseAttrs = {
     xmlns: 'http://www.w3.org/2000/svg',
-    width: 'size',
-    height: 'size',
-    viewBox: '0 0 96 96'
+    width: width,
+    height: height,
+    viewBox: '0 0 ' + width + ' ' + height
   }
   const fillAttrs = {
     fill: 'color',
