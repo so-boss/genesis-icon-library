@@ -1,17 +1,55 @@
+require('dotenv').config()
 const got = require('got')
 const {ensureDir, writeFile} = require('fs-extra')
 const {join, resolve} = require('path')
 const Figma = require('figma-js')
 const PQueue = require('p-queue')
-require('dotenv').config()
 const {FIGMA_TOKEN, FIGMA_FILE_URL} = process.env
+const {GraphQLClient, gql} = require('graphql-request');
+
+const dictionary = {
+  colors:{}
+}
+
+const registry = {
+  groups: {},
+  variants: {}
+}
+
+// // color_tokens().catch((error) => console.error(error))
+async function color_tokens() {
+  const endpoint = 'https://xdapi.toolabs.com/graphql';
+
+  const graphQLClient = new GraphQLClient(endpoint, {
+    headers: {
+      "x-toolabs-token" : '0781d947-72ac-464f-b46d-aa37c7e4ebb3'
+    },
+  })
+
+  const QUERY = gql`
+    {
+      colors {
+        id
+        name
+        hex
+      }
+    }
+  `;
+
+  const data = await graphQLClient.request(QUERY);
+
+  data.colors.forEach(function(token) {
+    dictionary.colors[token.name] = token;
+  })
+  //console.log(JSON.stringify(data, undefined, 2))
+}
 
 const options = {
   format: 'svg',
   outputDir: './src/',
   scale: '1',
   include_id: true,
-  simplify_stroke: true,
+  simplify_stroke: false,
 }
 
 for(const arg of process.argv.slice(2)) {
@@ -39,14 +77,57 @@ if (!fileId) {
   }
 }
 
+/*
+{
+  id: '5908:702',
+  name: 'color',
+  fill: undefined,
+  type: 'VECTOR',
+  blendMode: 'PASS_THROUGH',
+  absoluteBoundingBox: {
+    x: 671.8193969726562,
+    y: 384.6004943847656,
+    width: 38.13772964477539,
+    height: 12.658931732177734
+  },
+  constraints: { vertical: 'SCALE', horizontal: 'SCALE' },
+  fills: [ { blendMode: 'NORMAL', type: 'SOLID', color: [Object] } ],
+  strokes: [],
+  strokeWeight: 0.48984235525131226,
+  strokeAlign: 'INSIDE',
+  styles: { fill: '5901:550' },
+  effects: []
+}
+*/
+const filter_for_names = ["color"]
+const extract_special_layers = (layers, styles_in_figma) => {
+  const layer = layers.filter( i => filter_for_names.includes( i.name ) )[0]
+  if(layer) {
+    const definitions = {
+      fill: dictionary.colors[styles_in_figma[layer.styles.fill].name]
+    }
+
+    return {
+      id: layer.id,
+      name: layer.name,
+      fill: layer.fills[0].color,
+      styles: styles_in_figma[layer.styles.fill],
+      definitions: definitions
+    }
+  }
+  return false;
+
+}
+color_tokens();
 console.log(`Exporting ${FIGMA_FILE_URL} components`)
 client.file(fileId)
-
   .then(({ data }) => {
+
     console.log('Processing response')
     const things = {
       groups: {},
-      components: {}
+      components: {},
+      styles: data.styles
     }
     // const groups = {}
     // const components = {}
@@ -75,13 +156,58 @@ client.file(fileId)
 
         let component_name = name;
 
+
         if(group_name) {
+          const split_name = name.split("-");
+          const variant = {
+            name: split_name[0],
+            prop: split_name[1]
+          };
+
+          if(variant.name && variant.prop) {
+            // TODO: Create a recursive approach to assessing stuff like this
+            let registered_group = registry.groups[group_name];
+            if (!registered_group) {
+              registered_group = registry.groups[group_name] = {}
+            }
+            let registered_variant = registered_group[variant.name];
+            if (!registered_variant) {
+              registered_variant = registered_group[variant.name] = {
+                // TODO: Externalize how this works
+                // EHHH: Should colors be an object or at least check against an object to prevent dups
+                colors: []
+              };
+            }
+
+            if(description) {
+              try {
+                console.log(JSON.parse(description))
+              } catch (err) {
+
+              }
+
+            }
+            registered_variant.colors.push(variant.prop)
+          }
+
           things.groups[group_name].children[name] = {
             name, id
           }
         }
 
-        console.log(c)
+        let special_layer = null;
+        if(c.children[0]) {
+          let layers = c.children[0];
+          if(layers.children) {
+            layers = layers.children;
+            let layer = extract_special_layers(layers, things.styles);
+            if(layer) {
+              special_layer = layer;
+              //console.log(group_name, component_name, layer)
+            }
+          }
+        }
+
         things.components[id] = {
           component_name,
           name: component_name,
@@ -91,7 +217,13 @@ client.file(fileId)
           file: fileId,
           description,
           width,
-          height
+          height,
+        }
+        // NOTE: Special Layer is not how we are identifying variants exclusively
+        if(special_layer) {
+          things.components[id].variants = {
+            fill: special_layer
+          };
         }
       } else if (c.children) {
         // eslint-disable-next-line github/array-foreach
@@ -99,13 +231,12 @@ client.file(fileId)
       }
     }
 
-    // console.log(data.document.children)
     data.document.children.forEach(check)
     if (Object.values(things.components).length === 0) {
       throw Error('No components found!')
     }
 
-    //console.log(things.groups)
+    console.log(registry.groups)
     console.log(`${Object.values(things.components).length} components found in the figma file`)
     return things;
   })
@@ -170,3 +301,19 @@ function queueTasks(tasks, options) {
   queue.start()
   return queue.onIdle()
 }
+
+/*
+<SedanSideYellowIcon height="56" width="56" />
+
+<SedanSideYellowIcon size="small" />
+
+<SedanSideIcon fill="#EF5F54" size="medium" />
+
+<SedanSideIcon fill="red" size="medium" />
+
+<SedanIcon view="side" fill="red" size="medium" />
+
+<ArrowIcon pointing="east" fill="red" size="medium" />
+
+<Icon.Sedan view="front" fill="red" size="medium" />
+ */

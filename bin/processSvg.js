@@ -1,6 +1,6 @@
 const Svgo = require('svgo');
 const cheerio = require('cheerio')
-
+const { SVG } = require('@svgdotjs/svg.js');
 /**
  * Convert string to CamelCase.
  * @param {string} str - A string.
@@ -20,14 +20,14 @@ function optimize(svg) {
     plugins: [
       { convertShapeToPath: false },
       { mergePaths: false },
-      //{ removeAttrs: { attrs: '(fill|stroke.*)' } },
+      { removeAttrs: { attrs: '(fill|stroke.*)' } },
       { removeTitle: false },
       { cleanupIDs: false },
       { removeHiddenElems: false },
       { collapseGroups: false },
       { removeEmptyContainers: false },
-      { removeViewBox: false },
-      //{ removeUselessStrokeAndFill: true },
+      { removeViewBox: true },
+      { removeUselessStrokeAndFill: true },
     ],
   });
 
@@ -36,13 +36,35 @@ function optimize(svg) {
   });
 }
 
+function modify_paths(svg_code) {
+  let draw = SVG();
+  let svg_modified = draw.svg(svg_code);
+
+  return svg_modified.svg()
+}
+
 /**
  * remove SVG element.
  * @param {string} svg - An SVG string.
  * @returns {string}
  */
-function removeSVGElement(svg) {
+function removeSVGElement(svg, variants) {
   const $ = cheerio.load(svg);
+  const $body = $('body');
+
+  const $color = $body.find("#color");
+  //console.log("COLOR", $color)
+
+  if($color && (variants && variants.fill)) {
+    const defs = variants.fill.definitions;
+    console.log("DEFS", defs)
+
+    if(defs.fill) {
+      $color.attr("fill", defs.fill.hex);
+    }
+    //console.log("COLOR ELEMENT", variants.fill.definitions)
+  }
+
   return $('body').children().html();
 }
 
@@ -51,12 +73,13 @@ function removeSVGElement(svg) {
  * @param {string} svg - An SVG string.
  * @param {Promise<string>}
  */
-async function processSvg(svg) {
+async function processSvg(svg, variants) {
+
   const optimized = await optimize(svg)
     // remove semicolon inserted by prettier
     // because prettier thinks it's formatting JSX not HTML
     .then(svg => svg.replace(/;/g, ''))
-    .then(removeSVGElement)
+    .then(removeSVGElement(svg, variants))
     .then(svg => {
       if(svg) {
         svg.replace(/([a-z]+)-([a-z]+)=/g, (_, a, b) => `${a}${CamelCase(b)}=`)

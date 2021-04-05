@@ -59,16 +59,21 @@ const attrsToString = (attrs, style) => {
 };
 
 // generate icon code separately
-const generateIconCode = async ({modified_name, height, width, description}) => {
+const generateIconCode = async ({modified_name, height, width, description, variants}) => {
   const names = parseName(modified_name, defaultStyle)
   const location = path.join(rootDir, 'src/svg', `${names.name}.svg`)
   const destination = path.join(rootDir, 'src/icons', `${names.name}.js`)
   const code = fs.readFileSync(location)
-  const svgCode = await processSvg(code)
+  const svgCode = await processSvg(code, variants)
   const ComponentName = names.componentName
-  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style, height, width), names.style), svgCode)
+  const element = getElementCode(ComponentName, attrsToString(getAttrs(names.style, height, width, variants), names.style), svgCode)
+
+  // Replace id="color" with fill={fill}
+  const regex_color = /id="color"/gm;
+  const modified_element = element.replace(regex_color, "fill={background}");
+
   const component = format({
-    text: element,
+    text: modified_element,
     eslintConfig: {
       extends: 'airbnb',
     },
@@ -105,15 +110,13 @@ const appendToIconsIndex = ({ComponentName, modified_name}) => {
 
 generateIconsIndex()
 
-console.log(icons)
-
 Object
   .keys(icons)
   .map(key => icons[key])
-  .forEach(({component_name, group, height, width, description}) => {
+  .forEach(({component_name, group, height, width, variants, description}) => {
     //console.log(component_name, group, height, width, description)
     const modified_name = group+"-"+component_name;
-    generateIconCode({modified_name, height, width, description})
+    generateIconCode({modified_name, height, width, description, variants})
       .then(({ComponentName, modified_name}) => {
         appendToIconsIndex({ComponentName, modified_name})
       })
